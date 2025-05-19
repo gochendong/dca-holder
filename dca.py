@@ -89,7 +89,7 @@ def dca_strategy(trade: Trade):
     token_list = {}
     if total.get("USDT", 0) < base_amount + EXTRA_AMOUNT:
         if use_multi_accounts:
-            client.redeem("USDT", base_amount + EXTRA_AMOUNT - total.get("USDT", 0))
+            client.redeem("USDT", round(base_amount + EXTRA_AMOUNT - total.get("USDT", 0)))
         return
     for token in [Asset]:
         balance = total.get(token, 0)
