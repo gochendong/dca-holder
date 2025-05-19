@@ -7,9 +7,9 @@ Github: [https://github.com/gochendong/dca-holder](https://github.com/gochendong
 
 所有代码均有实盘资金7*24小时测试, 非demo级别, 请放心使用
 
-币安跟单链接: https://www.binance.com/zh-CN/copy-trading/lead-details/4467924166879352065
+币安实盘展示: https://www.binance.com/zh-CN/copy-trading/lead-details/4467924166879352065
 
-有疑问找[布里塔](https://chat.bulita.net)
+任何问题请咨询[布里塔](https://chat.bulita.net)
 
 </div>
 
@@ -23,7 +23,13 @@ Github: [https://github.com/gochendong/dca-holder](https://github.com/gochendong
 ## 使用
 
 1. 填写配置文件.env.example, 并将其重命名为.env
+   ```
+   cp .env.example .env
+   ```
 2. 确保已运行redis服务
+   ```
+   docker-compose -f docker-compose-redis.yaml up --build -d
+   ```
 3. 安装依赖 
     ```
     python3 -m pip install -r requirements.txt 
@@ -38,13 +44,12 @@ Github: [https://github.com/gochendong/dca-holder](https://github.com/gochendong
 1. 程序初始时, 请保证你的现货账户中不持有任何BTC, 并且现货或理财账户中拥有足够的USDT
 2. 如果USE_MULTI_ACCOUNTS为true, 策略将会利用你现货账户中的USDT和BTC, 以及理财账户中的USDT, 并且每次盈利部分都会转移至资金账户
 3. 如果USE_MULTI_ACCOUNTS为false, 策略只会使用你现货账户中的USDT和BTC
-4. 程序运行后, 不要手动交易BTC(手动加减仓需停止程序, 并修改redis中dca:xxx:BTC:long:cost对应的值), 充提USDT或交易其他币种不影响策略
+4. 程序运行后, 不要手动交易BTC(手动加减仓需停止程序, 并修改redis中dca:xxx:BTC:long:cost对应的值), 充提USDT, 交易其他币种或重启程序不影响策略
 
 ## 作者的话
-1. 本策略其实是一种资金管理策略, 逻辑并不复杂, 在风险与利润之间采取了折中的方案, 能永赚的逻辑是基于核心资产的长期升值, 所以对非核心资产无效, 至于什么是核心资产, 根据每个人的认知而不同
-2. 很多时候你的资金利用率会比较低, 但同时意味着你的流动资金很充足, 此时你可以充分享受活期理财的稳定收益, 同时以备不时之需
-3. 如果长期下跌导致资金被占用, 不用担心, 这说明你已经以较低的平均价买入了大量核心资产, 静待升值即可
-4. 长期运行之后, 你会通过低买高卖的价差储备了大量的核心资产
+1. 本策略其实是一种资金管理策略, 逻辑并不复杂, 在风险与利润之间采取了折中的方案, 能永赚的逻辑是基于核心资产的长期升值, 所以对非核心资产无效
+2. 如果长期下跌导致资金被占用, 不用担心, 这说明你已经以较低的平均价买入了大量核心资产, 静待升值即可
+3. 长期运行之后, 你会通过低买高卖的价差储备了大量的核心资产
 
 ## 参考文献
 
