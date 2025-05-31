@@ -3,3 +3,4 @@ ccxt
 loguru
 urllib3
 redis
+requests

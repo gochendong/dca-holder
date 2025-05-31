@@ -15,6 +15,8 @@ from common import (
     BUY,
     SELL,
     Trade,
+    INFO,
+    ERROR,
 )
 
 
@@ -45,7 +47,7 @@ def dca_task(trade: Trade):
             time.sleep(10)
         except Exception as e:
             logger.error(f"#{user_id}:{ex} {type(e)} {e} {traceback.format_exc()}")
-            notify(f"dca:{user_id}:{ex} {type(e)} {e} {traceback.format_exc()}")
+            notify(f"dca:{user_id}:{ex} {type(e)} {e} {traceback.format_exc()}", ERROR)
             break
 
 
@@ -89,7 +91,9 @@ def dca_strategy(trade: Trade):
     token_list = {}
     if total.get("USDT", 0) < base_amount + EXTRA_AMOUNT:
         if use_multi_accounts:
-            client.redeem("USDT", round(base_amount + EXTRA_AMOUNT - total.get("USDT", 0)))
+            client.redeem(
+                "USDT", round(base_amount + EXTRA_AMOUNT - total.get("USDT", 0))
+            )
         return
     for token in [Asset]:
         balance = total.get(token, 0)
@@ -138,7 +142,7 @@ def dca_strategy(trade: Trade):
                 rdb.set(f"dca:{user_id}:{ex}:{token}:long:count", count)
                 time.sleep(5)
                 msg = f"#{user_id}:{ex} {BUY} ${order['cost']:.2f} {symbol} at {order['price']:.2f}"
-                notify(msg)
+                notify(msg, INFO)
                 calc_pnl(
                     client, Asset, user_id, ex, min_profit_percent, use_multi_accounts
                 )
@@ -167,7 +171,7 @@ def dca_strategy(trade: Trade):
                 rdb.set(f"dca:{user_id}:{ex}:{token}:long:count", 1)
                 time.sleep(5)
                 msg = f"#{user_id}:{ex} {BUY} ${order['cost']:.2f} {token_info.symbol} at {order['price']:.2f}"
-                notify(msg)
+                notify(msg, INFO)
                 calc_pnl(
                     client, Asset, user_id, ex, min_profit_percent, use_multi_accounts
                 )
@@ -220,7 +224,7 @@ def dca_strategy(trade: Trade):
                         rdb.set(f"dca:{user_id}:{ex}:{token}:long:cost", base_amount)
                         rdb.set(f"dca:{user_id}:{ex}:{token}:long:count", 1)
                         msg = f"#{user_id}:{ex} {SELL} ${order['cost']:.2f} {token_info.symbol} at {order['price']:.2f}"
-                        notify(msg)
+                        notify(msg, INFO)
 
         rdb.delete(f"dca:{user_id}:{ex}:usdt:long:balance")
         time.sleep(5)

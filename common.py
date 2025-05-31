@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_FLOOR
 import urllib3
 import dotenv
 import time
+import requests
 
 dotenv.load_dotenv()
 
@@ -20,6 +21,12 @@ SELL = "sell"
 
 EXTRA_AMOUNT = 5
 MIN_SPOT_AMOUNT = 5.5
+
+# 日志级别
+DEBUG = 0
+INFO = 1
+WARNING = 2
+ERROR = 3
 
 logger = logger.patch(lambda record: record.update(name=f"[DCA-HOLDER]"))
 
@@ -73,7 +80,6 @@ class TradeParams:
         logger.info(f"{EX}_INCREASE_POSITION_RATIO: {INCREASE_POSITION_RATIO}")
         try:
             (
-                USE_MULTI_ACCOUNTS,
                 SHARES,
                 MIN_AMOUNT,
                 MAX_AMOUNT,
@@ -81,7 +87,6 @@ class TradeParams:
                 ADD_POSITION_RATIO,
                 INCREASE_POSITION_RATIO,
             ) = (
-                bool(USE_MULTI_ACCOUNTS),
                 int(SHARES),
                 float(MIN_AMOUNT),
                 float(MAX_AMOUNT),
@@ -92,7 +97,6 @@ class TradeParams:
         except ValueError:
             logger.error("环境变量配置错误")
             raise ValueError("环境变量配置错误")
-        self.use_multi_accounts = USE_MULTI_ACCOUNTS
         self.shares = SHARES
         self.min_amount = MIN_AMOUNT
         self.max_amount = MAX_AMOUNT
@@ -212,9 +216,28 @@ def round_floor(amount: float):
     return float(Decimal(amount).quantize(Decimal("0.00000001"), rounding=ROUND_FLOOR))
 
 
-# 定义一个函数，发送通知
-def notify(content):
+ENABLE_TELEGRAM_NOTIFICATION = os.getenv("ENABLE_TELEGRAM_NOTIFICATION")
+ENABLE_TELEGRAM_NOTIFICATION = (
+    True if ENABLE_TELEGRAM_NOTIFICATION.lower() == "true" else False
+)
+logger.info(f"ENABLE_TELEGRAM_NOTIFICATION: {ENABLE_TELEGRAM_NOTIFICATION}")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+
+def notify(content, level):
     logger.info(content)
+    if level < ERROR and not ENABLE_TELEGRAM_NOTIFICATION:
+        return
+    if TELEGRAM_CHAT_ID and TELEGRAM_BOT_TOKEN:
+        body = {"chat_id": TELEGRAM_CHAT_ID, "text": content}
+        resp = requests.post(
+            url=f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json=body,
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            logger.error(resp.text)
 
 
 def calc_pnl(client, token, user_id, ex, min_profit_percent, use_multi_accounts):
