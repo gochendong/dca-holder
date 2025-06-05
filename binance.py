@@ -18,23 +18,11 @@ EX = "BN"
 
 def init_binance_trade():
     trades = []
-    uids, api_keys, secret_keys, use_multi_accounts = (
+    uids, api_keys, secret_keys = (
         os.getenv(f"{EX}_UID"),
         os.getenv(f"{EX}_API_KEY"),
         os.getenv(f"{EX}_SECRET_KEY"),
-        os.getenv(f"{EX}_USE_MULTI_ACCOUNTS"),
     )
-    if not use_multi_accounts:
-        logger.error("Please set USE_MULTI_ACCOUNTS")
-        return
-    use_multi_accounts = use_multi_accounts.lower()
-    if use_multi_accounts == "true":
-        use_multi_accounts = True
-    elif use_multi_accounts == "false":
-        use_multi_accounts = False
-    else:
-        logger.error("USE_MULTI_ACCOUNTS must be true or false")
-        return
     if uids and api_keys and secret_keys:
         uids, api_keys, secret_keys = (
             uids.split(","),
@@ -44,17 +32,16 @@ def init_binance_trade():
         if len(uids) != len(api_keys) or len(api_keys) != len(secret_keys):
             logger.error("UID, API_KEY, and SECRET_KEY must have the same length")
             return
-
+        trade_params = TradeParams(EX)
         for idx, uid in enumerate(uids):
             client = BinanceClient(
-                api_keys[idx], secret_keys[idx], "", use_multi_accounts
+                api_keys[idx], secret_keys[idx], "", trade_params.use_multi_accounts
             )
-            trade_params = TradeParams(EX)
             trade = Trade(
                 user_id=uid,
                 exchange=EX,
                 client=client,
-                use_multi_accounts=use_multi_accounts,
+                use_multi_accounts=trade_params.use_multi_accounts,
                 shares=trade_params.shares,
                 min_amount=trade_params.min_amount,
                 max_amount=trade_params.max_amount,
@@ -75,7 +62,6 @@ class BinanceClient(BaseClient):
     def connect_exchange(self, apiKey, secretKey, password):
         return ccxt.binance(
             {
-                "verify": False,
                 "enableRateLimit": True,
                 "options": {
                     "defaultType": DEFAULT_TYPE,

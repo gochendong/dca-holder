@@ -23,24 +23,12 @@ PRODUCT_ID = {
 
 def init_bitget_trade():
     trades = []
-    uids, api_keys, secret_keys, passwords, use_multi_accounts = (
+    uids, api_keys, secret_keys, passwords = (
         os.getenv(f"{EX}_UID"),
         os.getenv(f"{EX}_API_KEY"),
         os.getenv(f"{EX}_SECRET_KEY"),
         os.getenv(f"{EX}_PASSWORD"),
-        os.getenv(f"{EX}_USE_MULTI_ACCOUNTS"),
     )
-    if not use_multi_accounts:
-        logger.error("Please set USE_MULTI_ACCOUNTS")
-        return
-    use_multi_accounts = use_multi_accounts.lower()
-    if use_multi_accounts == "true":
-        use_multi_accounts = True
-    elif use_multi_accounts == "false":
-        use_multi_accounts = False
-    else:
-        logger.error("USE_MULTI_ACCOUNTS must be true or false")
-        return
     if uids and api_keys and secret_keys and passwords:
         uids, api_keys, secret_keys, passwords = (
             uids.split(","),
@@ -57,16 +45,19 @@ def init_bitget_trade():
                 "UID, API_KEY, and SECRET_KEY and PASSWORD must have the same length"
             )
             return
+        trade_params = TradeParams(EX)
         for idx, uid in enumerate(uids):
             client = BitgetClient(
-                api_keys[idx], secret_keys[idx], passwords[idx], use_multi_accounts
+                api_keys[idx],
+                secret_keys[idx],
+                passwords[idx],
+                trade_params.use_multi_accounts,
             )
-            trade_params = TradeParams(EX)
             trade = Trade(
                 user_id=uid,
                 exchange=EX,
                 client=client,
-                use_multi_accounts=use_multi_accounts,
+                use_multi_accounts=trade_params.use_multi_accounts,
                 shares=trade_params.shares,
                 min_amount=trade_params.min_amount,
                 max_amount=trade_params.max_amount,
@@ -86,7 +77,6 @@ class BitgetClient(BaseClient):
     def connect_exchange(self, apiKey, secretKey, password):
         return ccxt.bitget(
             {
-                "verify": False,
                 "enableRateLimit": True,
                 "options": {
                     "defaultType": DEFAULT_TYPE,

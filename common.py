@@ -2,15 +2,11 @@ import redis
 from loguru import logger
 import os
 from decimal import Decimal, ROUND_FLOOR
-import urllib3
 import dotenv
 import time
 import requests
 
 dotenv.load_dotenv()
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 Asset = "BTC"
 
@@ -53,6 +49,10 @@ class TradeParams:
         USE_MULTI_ACCOUNTS = os.getenv(f"{EX}_USE_MULTI_ACCOUNTS")
         if not USE_MULTI_ACCOUNTS:
             logger.error("请设置USE_MULTI_ACCOUNTS")
+        USE_MULTI_ACCOUNTS = USE_MULTI_ACCOUNTS.lower()
+        if USE_MULTI_ACCOUNTS not in ["true", "false"]:
+            logger.error("USE_MULTI_ACCOUNTS只能为true或false")
+        USE_MULTI_ACCOUNTS = True if USE_MULTI_ACCOUNTS == "true" else False
         logger.info(f"{EX}_USE_MULTI_ACCOUNTS: {USE_MULTI_ACCOUNTS}")
         SHARES = os.getenv(f"{EX}_SHARES")
         if not SHARES:
@@ -97,6 +97,7 @@ class TradeParams:
         except ValueError:
             logger.error("环境变量配置错误")
             raise ValueError("环境变量配置错误")
+        self.use_multi_accounts = USE_MULTI_ACCOUNTS
         self.shares = SHARES
         self.min_amount = MIN_AMOUNT
         self.max_amount = MAX_AMOUNT
@@ -264,5 +265,5 @@ def calc_pnl(client, token, user_id, ex, min_profit_percent, use_multi_accounts)
     target_price = entry_price * (1 + min_profit_percent)
     msg = f"#{user_id}:{ex} entry_price: ${entry_price:.2f} target_price: ${target_price:.2f} total_cost: ${total_cost:.2f} total_value: ${total_value:.2f} pnl: {(total_value - total_cost) / total_cost * 100:.2f}%"
     if not use_multi_accounts:
-        msg += f" reserve: ${reserve_value:.2f} {token}"
+        msg += f" reserve: {reserve:.8f}≈${reserve_value:.2f} {token}"
     logger.info(msg)

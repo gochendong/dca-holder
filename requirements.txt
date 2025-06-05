@@ -1,6 +1,5 @@
+ccxt==4.4.88
 python-dotenv
-ccxt
 loguru
-urllib3
 redis
 requests
