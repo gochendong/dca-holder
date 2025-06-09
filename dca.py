@@ -36,12 +36,15 @@ def dca_task(trade: Trade):
             logger.error(f"#{user_id}:{ex} DCA RateLimitExceeded {type(e)}")
             time.sleep(10)
         except ccxt.errors.InsufficientFunds:
-            logger.warning(f"#{user_id}:{ex} DCA InsufficientFunds")
-            time.sleep(10)
+            logger.error(f"#{user_id}:{ex} DCA InsufficientFunds")
+            break
+        except ccxt.errors.DDoSProtection as e:
+            logger.error(f"#{user_id}:{ex} DCA DDoSProtection {type(e)}")
+            break
         except ccxt.errors.RequestTimeout as e:
             pass
         except ccxt.errors.NetworkError as e:
-            logger.error(f"#{user_id}:{ex} DCA NetworkError {type(e)}")
+            pass
         except ccxt.errors.ExchangeError as e:
             logger.error(f"#{user_id}:{ex} DCA ExchangeError {str(e)}")
             time.sleep(10)
