@@ -37,17 +37,13 @@ def dca_task(trade: Trade):
             time.sleep(10)
         except ccxt.errors.InsufficientFunds:
             logger.error(f"#{user_id}:{ex} DCA InsufficientFunds")
+            notify(f"#{user_id}:{ex} DCA InsufficientFunds", ERROR)
             break
         except ccxt.errors.DDoSProtection as e:
             logger.error(f"#{user_id}:{ex} DCA DDoSProtection {type(e)}")
             break
-        except ccxt.errors.RequestTimeout as e:
+        except (ccxt.errors.RequestTimeout, ccxt.errors.NetworkError):
             pass
-        except ccxt.errors.NetworkError as e:
-            pass
-        except ccxt.errors.ExchangeError as e:
-            logger.error(f"#{user_id}:{ex} DCA ExchangeError {str(e)}")
-            time.sleep(10)
         except Exception as e:
             logger.error(f"#{user_id}:{ex} {type(e)} {e} {traceback.format_exc()}")
             notify(f"dca:{user_id}:{ex} {type(e)} {e} {traceback.format_exc()}", ERROR)
@@ -186,7 +182,6 @@ def dca_strategy(trade: Trade):
         for token, token_info in token_list.items():
             if token != Asset:
                 continue
-
             this_reserve = (total_value - total_cost) / token_info.price
             logger.info(f"reserve: {this_reserve:.8f} {token}")
             if token_info.balance < this_reserve:
@@ -215,6 +210,8 @@ def dca_strategy(trade: Trade):
                     )
                 else:
                     sell_value = token_info.balance * token_info.price - base_amount
+                    if sell_value < MIN_SPOT_AMOUNT:
+                        continue
                     sell_amount = sell_value / token_info.price
                     order = client.trading(
                         token_info.symbol, SELL, sell_amount, sell_value
