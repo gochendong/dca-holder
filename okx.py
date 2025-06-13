@@ -98,6 +98,7 @@ class OKXClient(BaseClient):
         logger.info(f"subscribe {amount} {token}")
         try:
             self.transfer_to_funding(token, amount)
+            time.sleep(5)
             self.spot.private_post_finance_savings_purchase_redempt(
                 {
                     "ccy": token,
@@ -106,6 +107,7 @@ class OKXClient(BaseClient):
                     "rate": 0.01,
                 }
             )
+            time.sleep(5)
         except Exception as e:
             logger.error(e)
 

@@ -231,6 +231,7 @@ def notify(content, level):
     if level < ERROR and not ENABLE_TELEGRAM_NOTIFICATION:
         return
     if TELEGRAM_CHAT_ID and TELEGRAM_BOT_TOKEN:
+        content = f"[DCA-HOLDER] {content}"
         body = {"chat_id": TELEGRAM_CHAT_ID, "text": content}
         resp = requests.post(
             url=f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
