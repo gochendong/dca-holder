@@ -35,13 +35,18 @@ def init_binance_trade():
         trade_params = TradeParams(EX)
         for idx, uid in enumerate(uids):
             client = BinanceClient(
-                api_keys[idx], secret_keys[idx], "", trade_params.use_multi_accounts
+                api_keys[idx],
+                secret_keys[idx],
+                "",
+                trade_params.enable_funding_account,
+                trade_params.enable_earning_account,
             )
             trade = Trade(
                 user_id=uid,
                 exchange=EX,
                 client=client,
-                use_multi_accounts=trade_params.use_multi_accounts,
+                enable_funding_account=trade_params.enable_funding_account,
+                enable_earning_account=trade_params.enable_earning_account,
                 shares=trade_params.shares,
                 min_amount=trade_params.min_amount,
                 max_amount=trade_params.max_amount,
@@ -55,8 +60,21 @@ def init_binance_trade():
 
 
 class BinanceClient(BaseClient):
-    def __init__(self, api_key, secret_key, password, use_multi_accounts):
-        super().__init__(api_key, secret_key, password, use_multi_accounts)
+    def __init__(
+        self,
+        api_key,
+        secret_key,
+        password,
+        enable_funding_account,
+        enable_earning_account,
+    ):
+        super().__init__(
+            api_key,
+            secret_key,
+            password,
+            enable_funding_account,
+            enable_earning_account,
+        )
         self.spot = self.connect_exchange(api_key, secret_key, password)
 
     def connect_exchange(self, apiKey, secretKey, password):

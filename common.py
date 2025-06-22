@@ -46,34 +46,49 @@ except redis.exceptions.ConnectionError:
 
 class TradeParams:
     def __init__(self, EX):
-        USE_MULTI_ACCOUNTS = os.getenv(f"{EX}_USE_MULTI_ACCOUNTS")
-        if not USE_MULTI_ACCOUNTS:
-            logger.error("请设置USE_MULTI_ACCOUNTS")
-        USE_MULTI_ACCOUNTS = USE_MULTI_ACCOUNTS.lower()
-        if USE_MULTI_ACCOUNTS not in ["true", "false"]:
-            logger.error("USE_MULTI_ACCOUNTS只能为true或false")
-        USE_MULTI_ACCOUNTS = True if USE_MULTI_ACCOUNTS == "true" else False
-        logger.info(f"{EX}_USE_MULTI_ACCOUNTS: {USE_MULTI_ACCOUNTS}")
+        ENABLE_FUNDING_ACCOUNT = os.getenv(f"{EX}_ENABLE_FUNDING_ACCOUNT")
+        if not ENABLE_FUNDING_ACCOUNT:
+            logger.error("请设置ENABLE_FUNDING_ACCOUNT")
+        ENABLE_FUNDING_ACCOUNT = ENABLE_FUNDING_ACCOUNT.lower()
+        if ENABLE_FUNDING_ACCOUNT not in ["true", "false"]:
+            logger.error("ENABLE_FUNDING_ACCOUNT只能为true或false")
+        ENABLE_FUNDING_ACCOUNT = True if ENABLE_FUNDING_ACCOUNT == "true" else False
+        logger.info(f"{EX}_ENABLE_FUNDING_ACCOUNT: {ENABLE_FUNDING_ACCOUNT}")
+
+        ENABLE_EARNING_ACCOUNT = os.getenv(f"{EX}_ENABLE_EARNING_ACCOUNT")
+        if not ENABLE_EARNING_ACCOUNT:
+            logger.error("请设置ENABLE_EARNING_ACCOUNT")
+        ENABLE_EARNING_ACCOUNT = ENABLE_EARNING_ACCOUNT.lower()
+        if ENABLE_EARNING_ACCOUNT not in ["true", "false"]:
+            logger.error("ENABLE_EARNING_ACCOUNT只能为true或false")
+        ENABLE_EARNING_ACCOUNT = True if ENABLE_EARNING_ACCOUNT == "true" else False
+        logger.info(f"{EX}_ENABLE_EARNING_ACCOUNT: {ENABLE_EARNING_ACCOUNT}")
+
         SHARES = os.getenv(f"{EX}_SHARES")
         if not SHARES:
             logger.error("请设置SHARES")
         logger.info(f"{EX}_SHARES: {SHARES}")
+
         MIN_AMOUNT = os.getenv(f"{EX}_MIN_AMOUNT")
         if not MIN_AMOUNT:
             logger.error("请设置MIN_AMOUNT")
         logger.info(f"{EX}_MIN_AMOUNT: {MIN_AMOUNT}")
+
         MAX_AMOUNT = os.getenv(f"{EX}_MAX_AMOUNT")
         if not MAX_AMOUNT:
             logger.error("请设置MAX_AMOUNT")
         logger.info(f"{EX}_MAX_AMOUNT: {MAX_AMOUNT}")
+
         MIN_PROFIT_PERCENT = os.getenv(f"{EX}_MIN_PROFIT_PERCENT")
         if not MIN_PROFIT_PERCENT:
             logger.error("请设置MIN_PROFIT_PERCENT")
         logger.info(f"{EX}_MIN_PROFIT_PERCENT: {MIN_PROFIT_PERCENT}")
+
         ADD_POSITION_RATIO = os.getenv(f"{EX}_ADD_POSITION_RATIO")
         if not ADD_POSITION_RATIO:
             logger.error("请设置ADD_POSITION_RATIO")
         logger.info(f"{EX}_ADD_POSITION_RATIO: {ADD_POSITION_RATIO}")
+
         INCREASE_POSITION_RATIO = os.getenv(f"{EX}_INCREASE_POSITION_RATIO")
         if not INCREASE_POSITION_RATIO:
             logger.error("请设置INCREASE_POSITION_RATIO")
@@ -97,7 +112,8 @@ class TradeParams:
         except ValueError:
             logger.error("环境变量配置错误")
             raise ValueError("环境变量配置错误")
-        self.use_multi_accounts = USE_MULTI_ACCOUNTS
+        self.enable_funding_account = ENABLE_FUNDING_ACCOUNT
+        self.enable_earning_account = ENABLE_EARNING_ACCOUNT
         self.shares = SHARES
         self.min_amount = MIN_AMOUNT
         self.max_amount = MAX_AMOUNT
@@ -112,7 +128,8 @@ class Trade:
         user_id,
         exchange,
         client,
-        use_multi_accounts,
+        enable_funding_account,
+        enable_earning_account,
         shares,
         min_amount,
         max_amount,
@@ -123,7 +140,8 @@ class Trade:
         self.user_id = user_id
         self.exchange = exchange.lower()
         self.client = client
-        self.use_multi_accounts = use_multi_accounts
+        self.enable_funding_account = enable_funding_account
+        self.enable_earning_account = enable_earning_account
         self.shares = shares
         self.min_amount = min_amount
         self.max_amount = max_amount
@@ -141,9 +159,17 @@ class TokenInfo:
 
 
 class BaseClient:
-    def __init__(self, api_key, secret_key, password, use_multi_accounts):
+    def __init__(
+        self,
+        api_key,
+        secret_key,
+        password,
+        enable_funding_account,
+        enable_earning_account,
+    ):
         self.spot = self.connect_exchange(api_key, secret_key, password)
-        self.use_multi_accounts = use_multi_accounts
+        self.enable_funding_account = enable_funding_account
+        self.enable_earning_account = enable_earning_account
 
     def fetch_symbol(self, token):
         return token + "/USDT"
@@ -152,7 +178,7 @@ class BaseClient:
         return self.spot.fetch_total_balance().get(token, 0)
 
     def fetch_balance(self, token):
-        if self.use_multi_accounts:
+        if self.enable_earning_account:
             return self.fetch_spot_balance(token) + self.fetch_earn_balance(token)
         return self.fetch_spot_balance(token)
 
@@ -185,24 +211,25 @@ class BaseClient:
                 continue
             logger.error(f"未知交易状态 {status}")
             time.sleep(1)
-        if self.use_multi_accounts:
+        if self.enable_earning_account:
             self.subscribe("USDT", self.fetch_spot_balance("USDT"))
         cost = order["cost"]
         price = order["average"]
         if cost > 0 and price > 0:
             return {"cost": cost, "price": price}
 
-    # 如果需要实现自动理财, 需要实现以下方法
+    # 如果启用了理财账户, 需要实现以下方法
     def subscribe(self, token, amount):
         raise NotImplementedError
 
     def redeem(self, token, amount):
         raise NotImplementedError
 
-    def transfer_to_funding(self, token, amount):
+    def fetch_earn_balance(self, token):
         raise NotImplementedError
 
-    def fetch_earn_balance(self, token):
+    # 如果启用了资金账户, 需要实现以下方法
+    def transfer_to_funding(self, token, amount):
         raise NotImplementedError
 
     # 每个交易所必须实现以下方法
@@ -243,13 +270,13 @@ def notify(content, level):
             logger.error(resp.text)
 
 
-def calc_pnl(client, token, user_id, ex, min_profit_percent, use_multi_accounts):
+def calc_pnl(client, token, user_id, ex, min_profit_percent, enable_funding_account):
     total = client.spot.fetch_balance()["total"]
     balance = total.get(token, 0)
     if balance == 0:
         return
     reserve = 0
-    if not use_multi_accounts:
+    if not enable_funding_account:
         reserve = rdb.get(f"dca:{user_id}:{ex}:{token}:long:reserve")
         if reserve:
             reserve = float(reserve)
@@ -266,6 +293,6 @@ def calc_pnl(client, token, user_id, ex, min_profit_percent, use_multi_accounts)
     entry_price = total_cost / balance
     target_price = entry_price * (1 + min_profit_percent)
     msg = f"#{user_id}:{ex} entry_price: ${entry_price:.2f} target_price: ${target_price:.2f} total_cost: ${total_cost:.2f} total_value: ${total_value:.2f} pnl: {(total_value - total_cost) / total_cost * 100:.2f}%"
-    if not use_multi_accounts:
+    if not enable_funding_account:
         msg += f" reserve: {reserve:.8f}≈${reserve_value:.2f} {token}"
     logger.info(msg)

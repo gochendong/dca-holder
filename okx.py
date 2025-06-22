@@ -46,13 +46,15 @@ def init_okx_trade():
                 api_keys[idx],
                 secret_keys[idx],
                 passwords[idx],
-                trade_params.use_multi_accounts,
+                trade_params.enable_funding_account,
+                trade_params.enable_earning_account,
             )
             trade = Trade(
                 user_id=uid,
                 exchange=EX,
                 client=client,
-                use_multi_accounts=False,
+                enable_funding_account=trade_params.enable_funding_account,
+                enable_earning_account=False,
                 shares=trade_params.shares,
                 min_amount=trade_params.min_amount,
                 max_amount=trade_params.max_amount,
@@ -65,8 +67,21 @@ def init_okx_trade():
 
 
 class OKXClient(BaseClient):
-    def __init__(self, api_key, secret_key, password, use_multi_accounts):
-        super().__init__(api_key, secret_key, password, use_multi_accounts)
+    def __init__(
+        self,
+        api_key,
+        secret_key,
+        password,
+        enable_funding_account,
+        enable_earning_account,
+    ):
+        super().__init__(
+            api_key,
+            secret_key,
+            password,
+            enable_funding_account,
+            enable_earning_account,
+        )
         self.spot = self.connect_exchange(api_key, secret_key, password)
 
     def connect_exchange(self, apiKey, secretKey, password):
@@ -93,3 +108,13 @@ class OKXClient(BaseClient):
 
     def trading(self, symbol, side, amount, value):
         return super().place_market_order(symbol, side, amount, value, False)
+
+    # 6：资金账户
+    # 18：交易账户
+    def transfer_to_funding(self, token, amount):
+        if token == Asset:
+            amount = round_floor(amount)
+        try:
+            self.spot.transfer(token, amount, "18", "6")
+        except Exception as e:
+            logger.error(e)

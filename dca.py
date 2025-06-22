@@ -21,14 +21,17 @@ from common import (
 
 
 def dca_task(trade: Trade):
-    user_id, ex, min_profit_percent, use_multi_accounts = (
+    user_id, ex, min_profit_percent, enable_earning_account, enable_funding_account = (
         trade.user_id,
         trade.exchange,
         trade.min_profit_percent,
-        trade.use_multi_accounts,
+        trade.enable_earning_account,
+        trade.enable_funding_account,
     )
     logger.info(f"#{user_id}:{ex} start")
-    calc_pnl(trade.client, Asset, user_id, ex, min_profit_percent, use_multi_accounts)
+    calc_pnl(
+        trade.client, Asset, user_id, ex, min_profit_percent, enable_funding_account
+    )
     while True:
         try:
             dca_strategy(trade)
@@ -54,7 +57,8 @@ def dca_strategy(trade: Trade):
     user_id = trade.user_id
     ex = trade.exchange
     client = trade.client
-    use_multi_accounts = trade.use_multi_accounts
+    enable_funding_account = trade.enable_funding_account
+    enable_earning_account = trade.enable_earning_account
     shares = trade.shares
     min_amount = trade.min_amount
     max_amount = trade.max_amount
@@ -62,7 +66,7 @@ def dca_strategy(trade: Trade):
     add_position_ratio = trade.add_position_ratio
     increase_position_ratio = trade.increase_position_ratio
     reserve = 0
-    if not use_multi_accounts:
+    if not enable_funding_account:
         reserve = rdb.get(f"dca:{user_id}:{ex}:{Asset}:long:reserve")
         if reserve:
             reserve = float(reserve)
@@ -89,7 +93,7 @@ def dca_strategy(trade: Trade):
     dust_token = set()
     token_list = {}
     if total.get("USDT", 0) < base_amount + EXTRA_AMOUNT:
-        if use_multi_accounts:
+        if enable_earning_account:
             client.redeem(
                 "USDT", round(base_amount + EXTRA_AMOUNT - total.get("USDT", 0))
             )
@@ -143,7 +147,12 @@ def dca_strategy(trade: Trade):
                 msg = f"#{user_id}:{ex} {BUY} ${order['cost']:.2f} {symbol} at {order['price']:.2f}"
                 notify(msg, INFO)
                 calc_pnl(
-                    client, Asset, user_id, ex, min_profit_percent, use_multi_accounts
+                    client,
+                    Asset,
+                    user_id,
+                    ex,
+                    min_profit_percent,
+                    enable_funding_account,
                 )
                 return
 
@@ -172,7 +181,12 @@ def dca_strategy(trade: Trade):
                 msg = f"#{user_id}:{ex} {BUY} ${order['cost']:.2f} {token_info.symbol} at {order['price']:.2f}"
                 notify(msg, INFO)
                 calc_pnl(
-                    client, Asset, user_id, ex, min_profit_percent, use_multi_accounts
+                    client,
+                    Asset,
+                    user_id,
+                    ex,
+                    min_profit_percent,
+                    enable_funding_account,
                 )
                 return
 
@@ -186,7 +200,7 @@ def dca_strategy(trade: Trade):
             logger.info(f"reserve: {this_reserve:.8f} {token}")
             if token_info.balance < this_reserve:
                 raise Exception(f"token.balance: {token_info.balance:.8f} {token}")
-            if use_multi_accounts:
+            if enable_funding_account:
                 # 将净盈利的Asset转到资金账户
                 client.transfer_to_funding(token, this_reserve)
             else:
@@ -228,4 +242,4 @@ def dca_strategy(trade: Trade):
 
         rdb.delete(f"dca:{user_id}:{ex}:usdt:long:balance")
         time.sleep(5)
-        calc_pnl(client, Asset, user_id, ex, min_profit_percent, use_multi_accounts)
+        calc_pnl(client, Asset, user_id, ex, min_profit_percent, enable_funding_account)
