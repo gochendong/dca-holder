@@ -46,21 +46,19 @@ except redis.exceptions.ConnectionError:
 
 class TradeParams:
     def __init__(self, EX):
-        ENABLE_FUNDING_ACCOUNT = os.getenv(f"{EX}_ENABLE_FUNDING_ACCOUNT")
+        ENABLE_FUNDING_ACCOUNT = os.getenv(f"{EX}_ENABLE_FUNDING_ACCOUNT", "")
         if not ENABLE_FUNDING_ACCOUNT:
             logger.error("请设置ENABLE_FUNDING_ACCOUNT")
         ENABLE_FUNDING_ACCOUNT = ENABLE_FUNDING_ACCOUNT.lower()
-        if ENABLE_FUNDING_ACCOUNT not in ["true", "false"]:
-            logger.error("ENABLE_FUNDING_ACCOUNT只能为true或false")
+        assert ENABLE_FUNDING_ACCOUNT in ["true", "false"]
         ENABLE_FUNDING_ACCOUNT = True if ENABLE_FUNDING_ACCOUNT == "true" else False
         logger.info(f"{EX}_ENABLE_FUNDING_ACCOUNT: {ENABLE_FUNDING_ACCOUNT}")
 
-        ENABLE_EARNING_ACCOUNT = os.getenv(f"{EX}_ENABLE_EARNING_ACCOUNT")
+        ENABLE_EARNING_ACCOUNT = os.getenv(f"{EX}_ENABLE_EARNING_ACCOUNT", "")
         if not ENABLE_EARNING_ACCOUNT:
             logger.error("请设置ENABLE_EARNING_ACCOUNT")
         ENABLE_EARNING_ACCOUNT = ENABLE_EARNING_ACCOUNT.lower()
-        if ENABLE_EARNING_ACCOUNT not in ["true", "false"]:
-            logger.error("ENABLE_EARNING_ACCOUNT只能为true或false")
+        assert ENABLE_EARNING_ACCOUNT in ["true", "false"]
         ENABLE_EARNING_ACCOUNT = True if ENABLE_EARNING_ACCOUNT == "true" else False
         logger.info(f"{EX}_ENABLE_EARNING_ACCOUNT: {ENABLE_EARNING_ACCOUNT}")
 
