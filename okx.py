@@ -52,7 +52,7 @@ def init_okx_trade():
                 user_id=uid,
                 exchange=EX,
                 client=client,
-                use_multi_accounts=trade_params.use_multi_accounts,
+                use_multi_accounts=False,
                 shares=trade_params.shares,
                 min_amount=trade_params.min_amount,
                 max_amount=trade_params.max_amount,
@@ -91,60 +91,5 @@ class OKXClient(BaseClient):
                 return float(pos["amt"])
         return 0
 
-    def subscribe(self, token, amount):
-        if token == Asset:
-            return
-        amount = round_floor(amount)
-        logger.info(f"subscribe {amount} {token}")
-        try:
-            self.transfer_to_funding(token, amount)
-            time.sleep(5)
-            self.spot.private_post_finance_savings_purchase_redempt(
-                {
-                    "ccy": token,
-                    "amt": float(amount),
-                    "side": "purchase",
-                    "rate": 0.01,
-                }
-            )
-            time.sleep(5)
-        except Exception as e:
-            logger.error(e)
-
-    def redeem(self, token, amount):
-        if token == Asset:
-            return
-        if amount < 1:
-            amount = 1
-        amount = round_floor(amount)
-        logger.info(f"redeem {amount} {token}")
-        self.spot.private_post_finance_savings_purchase_redempt(
-            {
-                "ccy": token,
-                "amt": float(amount),
-                "side": "redempt",
-                "rate": 0.01,
-            }
-        )
-        time.sleep(5)
-        self.transfer_to_spot(token, amount)
-        time.sleep(5)
-
     def trading(self, symbol, side, amount, value):
         return super().place_market_order(symbol, side, amount, value, False)
-
-    # 6：资金账户
-    # 18：交易账户
-    def transfer_to_spot(self, token, amount):
-        try:
-            self.spot.transfer(token, amount, "6", "18")
-        except Exception as e:
-            logger.error(e)
-
-    def transfer_to_funding(self, token, amount):
-        if token == Asset:
-            amount = round_floor(amount)
-        try:
-            self.spot.transfer(token, amount, "18", "6")
-        except Exception as e:
-            logger.error(e)

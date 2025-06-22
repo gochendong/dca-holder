@@ -192,17 +192,7 @@ class BaseClient:
         if cost > 0 and price > 0:
             return {"cost": cost, "price": price}
 
-    # 每个交易所必须实现以下方法
-    def connect_exchange(self, api_key, secret_key, password):
-        raise NotImplementedError
-
-    # 调用place_market_order方法
-    def trading(self, symbol, side, amount, value):
-        raise NotImplementedError
-
-    def fetch_earn_balance(self, token):
-        raise NotImplementedError
-
+    # 如果需要实现自动理财, 需要实现以下方法
     def subscribe(self, token, amount):
         raise NotImplementedError
 
@@ -210,6 +200,17 @@ class BaseClient:
         raise NotImplementedError
 
     def transfer_to_funding(self, token, amount):
+        raise NotImplementedError
+
+    def fetch_earn_balance(self, token):
+        raise NotImplementedError
+
+    # 每个交易所必须实现以下方法
+    def connect_exchange(self, api_key, secret_key, password):
+        raise NotImplementedError
+
+    # 调用place_market_order方法
+    def trading(self, symbol, side, amount, value):
         raise NotImplementedError
 
 
