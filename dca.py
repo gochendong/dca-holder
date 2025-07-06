@@ -65,6 +65,7 @@ def dca_strategy(trade: Trade):
     min_profit_percent = trade.min_profit_percent
     add_position_ratio = trade.add_position_ratio
     increase_position_ratio = trade.increase_position_ratio
+    holder_ratio = trade.holder_ratio
     reserve = 0
     if not enable_funding_account:
         reserve = rdb.get(f"dca:{user_id}:{ex}:{Asset}:long:reserve")
@@ -196,24 +197,30 @@ def dca_strategy(trade: Trade):
         for token, token_info in token_list.items():
             if token != Asset:
                 continue
-            this_reserve = (total_value - total_cost) / token_info.price
-            logger.info(f"reserve: {this_reserve:.8f} {token}")
+            profit = total_value - total_cost
+            estimated_sold_value = profit * (1 - holder_ratio)
+            if estimated_sold_value < MIN_SPOT_AMOUNT:
+                holder_ratio = 1
+            this_reserve = profit * holder_ratio / token_info.price
+            logger.info(
+                f"reserve: {this_reserve:.8f} {token} ratio: {holder_ratio:.2%}"
+            )
             if token_info.balance < this_reserve:
                 raise Exception(f"token.balance: {token_info.balance:.8f} {token}")
-            if enable_funding_account:
-                # 将净盈利的Asset转到资金账户
-                client.transfer_to_funding(token, this_reserve)
-            else:
-                all_reserve = this_reserve
-                last_reserve = rdb.get(f"dca:{user_id}:{ex}:{token}:long:reserve")
-                if last_reserve:
-                    last_reserve = float(last_reserve)
-                    all_reserve = last_reserve + this_reserve
-                rdb.set(f"dca:{user_id}:{ex}:{token}:long:reserve", all_reserve)
+            if this_reserve > 0:
+                if enable_funding_account:
+                    # 将净盈利的Asset转到资金账户
+                    client.transfer_to_funding(token, this_reserve)
+                else:
+                    all_reserve = this_reserve
+                    last_reserve = rdb.get(f"dca:{user_id}:{ex}:{token}:long:reserve")
+                    if last_reserve:
+                        last_reserve = float(last_reserve)
+                        all_reserve = last_reserve + this_reserve
+                    rdb.set(f"dca:{user_id}:{ex}:{token}:long:reserve", all_reserve)
 
             token_info.balance = token_info.balance - this_reserve
             count = rdb.get(f"dca:{user_id}:{ex}:{token}:long:count")
-            # 加仓后的止盈与没有加仓的止盈方案不一样, 保证尽量少交易, 减少手续费
             if count:
                 count = int(count)
                 if count == 1:

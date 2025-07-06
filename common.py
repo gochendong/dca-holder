@@ -91,6 +91,11 @@ class TradeParams:
         if not INCREASE_POSITION_RATIO:
             logger.error("请设置INCREASE_POSITION_RATIO")
         logger.info(f"{EX}_INCREASE_POSITION_RATIO: {INCREASE_POSITION_RATIO}")
+
+        HOLDER_RATIO = os.getenv(f"{EX}_HOLDER_RATIO")
+        if not HOLDER_RATIO:
+            logger.error("请设置HOLDER_RATIO")
+        logger.info(f"{EX}_HOLDER_RATIO: {HOLDER_RATIO}")
         try:
             (
                 SHARES,
@@ -99,6 +104,7 @@ class TradeParams:
                 MIN_PROFIT_PERCENT,
                 ADD_POSITION_RATIO,
                 INCREASE_POSITION_RATIO,
+                HOLDER_RATIO,
             ) = (
                 int(SHARES),
                 float(MIN_AMOUNT),
@@ -106,10 +112,20 @@ class TradeParams:
                 float(MIN_PROFIT_PERCENT),
                 float(ADD_POSITION_RATIO),
                 float(INCREASE_POSITION_RATIO),
+                float(HOLDER_RATIO),
             )
         except ValueError:
             logger.error("环境变量配置错误")
             raise ValueError("环境变量配置错误")
+        assert (
+            SHARES > 0
+            and MIN_AMOUNT >= 0
+            and MAX_AMOUNT >= 0
+            and 0 < MIN_PROFIT_PERCENT < 1
+            and 0 < ADD_POSITION_RATIO < 1
+            and 0 <= INCREASE_POSITION_RATIO < 1
+            and 0 <= HOLDER_RATIO <= 1
+        )
         self.enable_funding_account = ENABLE_FUNDING_ACCOUNT
         self.enable_earning_account = ENABLE_EARNING_ACCOUNT
         self.shares = SHARES
@@ -118,6 +134,7 @@ class TradeParams:
         self.min_profit_percent = MIN_PROFIT_PERCENT
         self.add_position_ratio = ADD_POSITION_RATIO
         self.increase_position_ratio = INCREASE_POSITION_RATIO
+        self.holder_ratio = HOLDER_RATIO
 
 
 class Trade:
@@ -134,6 +151,7 @@ class Trade:
         min_profit_percent,
         add_position_ratio,
         increase_position_ratio,
+        holder_ratio,
     ):
         self.user_id = user_id
         self.exchange = exchange.lower()
@@ -146,6 +164,7 @@ class Trade:
         self.min_profit_percent = min_profit_percent
         self.add_position_ratio = add_position_ratio
         self.increase_position_ratio = increase_position_ratio
+        self.holder_ratio = holder_ratio
 
 
 class TokenInfo:
