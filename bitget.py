@@ -23,6 +23,11 @@ PRODUCT_ID = {
 
 def init_bitget_trade():
     trades = []
+    ENABLED = f"{EX}_ENABLED"
+    ENABLED = os.getenv(ENABLED, "false").lower()
+    if ENABLED != "true":
+        logger.info(f"{EX}交易所未启用")
+        return trades
     uids, api_keys, secret_keys, passwords = (
         os.getenv(f"{EX}_UID"),
         os.getenv(f"{EX}_API_KEY"),
