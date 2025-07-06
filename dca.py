@@ -220,32 +220,25 @@ def dca_strategy(trade: Trade):
                     rdb.set(f"dca:{user_id}:{ex}:{token}:long:reserve", all_reserve)
 
             token_info.balance = token_info.balance - this_reserve
-            count = rdb.get(f"dca:{user_id}:{ex}:{token}:long:count")
-            if count:
-                count = int(count)
-                if count == 1:
-                    rdb.set(f"dca:{user_id}:{ex}:{token}:long:price", token_info.price)
-                    rdb.set(
-                        f"dca:{user_id}:{ex}:{token}:long:cost",
-                        token_info.balance * token_info.price,
-                    )
-                else:
-                    sell_value = token_info.balance * token_info.price - base_amount
-                    if sell_value < MIN_SPOT_AMOUNT:
-                        continue
-                    sell_amount = sell_value / token_info.price
-                    order = client.trading(
-                        token_info.symbol, SELL, sell_amount, sell_value
-                    )
-                    if order:
-                        rdb.set(
-                            f"dca:{user_id}:{ex}:{token}:long:price",
-                            token_info.price,
-                        )
-                        rdb.set(f"dca:{user_id}:{ex}:{token}:long:cost", base_amount)
-                        rdb.set(f"dca:{user_id}:{ex}:{token}:long:count", 1)
-                        msg = f"#{user_id}:{ex} {SELL} ${order['cost']:.2f} {token_info.symbol} at {order['price']:.2f}"
-                        notify(msg, INFO)
+            sell_value = token_info.balance * token_info.price - base_amount
+            if sell_value < MIN_SPOT_AMOUNT:
+                rdb.set(f"dca:{user_id}:{ex}:{token}:long:price", token_info.price)
+                rdb.set(
+                    f"dca:{user_id}:{ex}:{token}:long:cost",
+                    token_info.balance * token_info.price,
+                )
+                continue
+            sell_amount = sell_value / token_info.price
+            order = client.trading(token_info.symbol, SELL, sell_amount, sell_value)
+            if order:
+                rdb.set(
+                    f"dca:{user_id}:{ex}:{token}:long:price",
+                    token_info.price,
+                )
+                rdb.set(f"dca:{user_id}:{ex}:{token}:long:cost", base_amount)
+                rdb.set(f"dca:{user_id}:{ex}:{token}:long:count", 1)
+                msg = f"#{user_id}:{ex} {SELL} ${order['cost']:.2f} {token_info.symbol} at {order['price']:.2f}"
+                notify(msg, INFO)
 
         rdb.delete(f"dca:{user_id}:{ex}:usdt:long:balance")
         time.sleep(5)
